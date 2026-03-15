@@ -75,10 +75,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
             guard let path = tab.filePath else { continue }
             windowController.editorVC?.bridge.requestMarkdown(id: tab.id) { [weak self] content in
                 guard let content = content else { return }
-                let enc: FileEncoding = tab.encoding == "UTF-8 BOM" ? .utf8BOM : (tab.encoding == "Latin-1" ? .latin1 : .utf8)
-                let le: LineEnding = tab.lineEnding == "CRLF" ? .crlf : .lf
-                try? FileIO.writeFile(at: path, content: content, encoding: enc, lineEnding: le)
-                self?.windowController.tabManager.setDirty(id: tab.id, isDirty: false)
+                let enc = FileEncoding(displayName: tab.encoding)
+                let le = LineEnding(rawValue: tab.lineEnding) ?? .lf
+                do {
+                    try FileIO.writeFile(at: path, content: content, encoding: enc, lineEnding: le)
+                    self?.windowController.tabManager.setDirty(id: tab.id, isDirty: false)
+                } catch {
+                    NSLog("Marker: auto-save failed for \(path): \(error)")
+                    // Dirty flag NOT cleared — will retry on next timer fire
+                }
             }
         }
     }
@@ -237,18 +242,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
         let response = alert.runModal()
         switch response {
         case .alertFirstButtonReturn:
-            // Save all dirty tabs then quit
+            // Save all dirty tabs, wait for all to complete, then quit
+            let group = DispatchGroup()
             for tab in dirtyTabs {
                 guard let path = tab.filePath else { continue }
+                group.enter()
                 windowController.editorVC?.bridge.requestMarkdown(id: tab.id) { content in
+                    defer { group.leave() }
                     guard let content = content else { return }
-                    let enc: FileEncoding = tab.encoding == "UTF-8 BOM" ? .utf8BOM : (tab.encoding == "Latin-1" ? .latin1 : .utf8)
-                    let le: LineEnding = tab.lineEnding == "CRLF" ? .crlf : .lf
-                    try? FileIO.writeFile(at: path, content: content, encoding: enc, lineEnding: le)
+                    do {
+                        try FileIO.writeFile(at: path, content: content,
+                                             encoding: FileEncoding(displayName: tab.encoding),
+                                             lineEnding: LineEnding(rawValue: tab.lineEnding) ?? .lf)
+                    } catch {
+                        NSLog("Marker: save on quit failed for \(path): \(error)")
+                    }
                 }
             }
-            // Give a moment for async saves, then terminate
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            group.notify(queue: .main) {
+                NSApp.reply(toApplicationShouldTerminate: true)
+            }
+            // Safety timeout in case JS never responds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
                 NSApp.reply(toApplicationShouldTerminate: true)
             }
             return .terminateLater
@@ -463,8 +478,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
 
         windowController.editorVC?.bridge.requestMarkdown(id: tab.id) { [weak self] content in
             guard let content = content else { return }
-            let enc: FileEncoding = tab.encoding == "UTF-8 BOM" ? .utf8BOM : (tab.encoding == "Latin-1" ? .latin1 : .utf8)
-            let le: LineEnding = tab.lineEnding == "CRLF" ? .crlf : .lf
+            let enc = FileEncoding(displayName: tab.encoding)
+            let le = LineEnding(rawValue: tab.lineEnding) ?? .lf
             do {
                 try FileIO.writeFile(at: path, content: content, encoding: enc, lineEnding: le)
                 self?.windowController.tabManager.setDirty(id: tab.id, isDirty: false)
@@ -487,8 +502,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
 
             self?.windowController.editorVC?.bridge.requestMarkdown(id: tab.id) { content in
                 guard let content = content else { return }
-                let enc: FileEncoding = tab.encoding == "UTF-8 BOM" ? .utf8BOM : (tab.encoding == "Latin-1" ? .latin1 : .utf8)
-                let le: LineEnding = tab.lineEnding == "CRLF" ? .crlf : .lf
+                let enc = FileEncoding(displayName: tab.encoding)
+                let le = LineEnding(rawValue: tab.lineEnding) ?? .lf
                 do {
                     try FileIO.writeFile(at: url.path, content: content, encoding: enc, lineEnding: le)
                     // Update tab with new file path and title
@@ -522,7 +537,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
             windowController.editorVC?.bridge.requestMarkdown(id: id) { [weak self] content in
                 guard let content = content else { return }
                 do {
-                    try FileIO.writeFile(at: path, content: content, encoding: .utf8, lineEnding: .lf)
+                    let enc = FileEncoding(displayName: tab.encoding)
+                    let le = LineEnding(rawValue: tab.lineEnding) ?? .lf
+                    try FileIO.writeFile(at: path, content: content, encoding: enc, lineEnding: le)
                     NSLog("Marker: saved \(path)")
                 } catch {
                     NSLog("Marker: save failed: \(error)")

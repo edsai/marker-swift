@@ -31,6 +31,14 @@ enum FileEncoding {
         case .latin1: return "Latin-1"
         }
     }
+
+    init(displayName: String) {
+        switch displayName {
+        case "UTF-8 BOM": self = .utf8BOM
+        case "Latin-1": self = .latin1
+        default: self = .utf8
+        }
+    }
 }
 
 struct FileContent {
