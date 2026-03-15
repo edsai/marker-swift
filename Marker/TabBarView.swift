@@ -216,9 +216,14 @@ private class TabButton: NSView {
         titleLabel.stringValue = title
     }
 
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateAppearance()
+    }
+
     private func updateAppearance() {
         layer?.backgroundColor = isActive
-            ? NSColor.controlBackgroundColor.cgColor
+            ? NSColor.selectedContentBackgroundColor.withAlphaComponent(0.3).cgColor
             : NSColor.clear.cgColor
         titleLabel.textColor = isActive ? .labelColor : .secondaryLabelColor
         layer?.cornerRadius = 4
