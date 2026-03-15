@@ -170,8 +170,12 @@ extension MainWindowController: TabBarViewDelegate {
     func tabBarDidRequestNewTab() {
         let tabId = "tab-\(Int(Date().timeIntervalSince1970 * 1000))"
         // Call JS first, register in Swift only on success
-        webView?.evaluateJavaScript("marker.openTab('\(tabId)', '')") { [weak self] _, error in
-            if let error = error {
+        webView?.callAsyncJavaScript(
+            "await marker.openTab(tabId, content)",
+            arguments: ["tabId": tabId, "content": ""],
+            in: nil, in: .page
+        ) { [weak self] result in
+            if case .failure(let error) = result {
                 NSLog("Marker: failed to open new tab: \(error)")
                 return
             }
@@ -186,15 +190,27 @@ extension MainWindowController: TabManagerDelegate {
     func tabManager(_ manager: TabManager, didSwitchTo tab: Tab) {
         tabBarView.setActiveTab(id: tab.id)
         // switchTab is idempotent in JS — calling it after openTab is safe (just re-shows the tab)
-        webView?.evaluateJavaScript("marker.switchTab('\(tab.id)', '')") { _, error in
-            if let error = error { NSLog("Marker: failed to switch tab: \(error)") }
+        webView?.callAsyncJavaScript(
+            "await marker.switchTab(tabId, content)",
+            arguments: ["tabId": tab.id, "content": ""],
+            in: nil, in: .page
+        ) { result in
+            if case .failure(let error) = result {
+                NSLog("Marker: failed to switch tab: \(error)")
+            }
         }
     }
 
     func tabManager(_ manager: TabManager, didClose tab: Tab) {
         tabBarView.removeTab(id: tab.id)
-        webView?.evaluateJavaScript("marker.closeTab('\(tab.id)')") { _, error in
-            if let error = error { NSLog("Marker: failed to close tab: \(error)") }
+        webView?.callAsyncJavaScript(
+            "await marker.closeTab(tabId)",
+            arguments: ["tabId": tab.id],
+            in: nil, in: .page
+        ) { result in
+            if case .failure(let error) = result {
+                NSLog("Marker: failed to close tab: \(error)")
+            }
         }
     }
 
