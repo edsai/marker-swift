@@ -7,7 +7,7 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     let fileTreeVC = FileTreeViewController()
     let centerContainer = NSView()  // Public for B3 webview swap
     let outlineVC = OutlineViewController()
-    private let statusBar = NSTextField(labelWithString: "")
+    let statusBarView = StatusBarView()
 
     // EditorWebViewController whose view is embedded in centerContainer.
     // Note: Not added via addChild — NSWindowController is not NSViewController.
@@ -76,15 +76,8 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
         contentView.addSubview(splitView)
 
         // Status bar
-        statusBar.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-        statusBar.textColor = .tertiaryLabelColor
-        statusBar.backgroundColor = NSColor(red: 0.10, green: 0.10, blue: 0.10, alpha: 1.0)
-        statusBar.drawsBackground = true
-        statusBar.isBezeled = false
-        statusBar.isEditable = false
-        statusBar.stringValue = "  Ln 1, Col 1"
-        statusBar.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(statusBar)
+        statusBarView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(statusBarView)
 
         // Pin all three vertically: tabBar(36) | splitView(fill) | statusBar(24)
         NSLayoutConstraint.activate([
@@ -96,11 +89,11 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
             splitView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             splitView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
-            statusBar.topAnchor.constraint(equalTo: splitView.bottomAnchor),
-            statusBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            statusBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            statusBar.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            statusBar.heightAnchor.constraint(equalToConstant: 24),
+            statusBarView.topAnchor.constraint(equalTo: splitView.bottomAnchor),
+            statusBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            statusBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            statusBarView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            statusBarView.heightAnchor.constraint(equalToConstant: 24),
         ])
 
         // NO width constraints on split view subviews — NSSplitView manages sizes via dividers.
@@ -125,7 +118,15 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     // MARK: - Public API
 
     func updateCursorPosition(line: Int, col: Int) {
-        statusBar.stringValue = "  Ln \(line), Col \(col)"
+        statusBarView.updateCursor(line: line, col: col)
+    }
+
+    func updateStatusBarFilePath(_ path: String?) {
+        statusBarView.updateFilePath(path)
+    }
+
+    func updateWordCount(_ count: Int) {
+        statusBarView.updateWordCount(count)
     }
 
     func toggleLeftSidebar() {
@@ -206,6 +207,8 @@ extension MainWindowController: TabManagerDelegate {
         editorVC?.bridge.switchTab(id: tab.id)
         outlineVC.activeTabId = tab.id
         outlineVC.refreshHeadings(webView: editorVC?.webView)
+        let filePath = tab.filePath
+        statusBarView.updateFilePath(filePath)
     }
 
     func tabManager(_ manager: TabManager, didClose tab: Tab) {
