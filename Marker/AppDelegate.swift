@@ -400,7 +400,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
 
     func editor(didEvictTab tabId: String, markdown: String) {
         NSLog("Marker: tab \(tabId) evicted from pool, caching content")
-        evictedContent[tabId] = markdown
+        // Guard: don't overwrite existing cached content with empty (double-eviction scenario)
+        if evictedContent[tabId] == nil || !markdown.isEmpty {
+            evictedContent[tabId] = markdown
+        }
     }
 
     /// Returns and removes cached content for an evicted tab.

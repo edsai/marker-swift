@@ -90,7 +90,9 @@ class FileTreeViewController: NSViewController, NSOutlineViewDataSource, NSOutli
     @objc private func newFile() {
         // Determine target directory
         let targetDir: URL
-        if let node = selectedNode() {
+        // Capture the selected node BEFORE the modal dialog (clickedRow resets after modal)
+        let targetNode = selectedNode()
+        if let node = targetNode {
             targetDir = node.isDirectory ? node.url : node.url.deletingLastPathComponent()
         } else if let root = rootURL {
             targetDir = root
@@ -108,8 +110,12 @@ class FileTreeViewController: NSViewController, NSOutlineViewDataSource, NSOutli
         alert.addButton(withTitle: "Cancel")
 
         guard alert.runModal() == .alertFirstButtonReturn else { return }
-        let filename = input.stringValue.trimmingCharacters(in: .whitespaces)
+        var filename = input.stringValue.trimmingCharacters(in: .whitespaces)
         guard !filename.isEmpty else { return }
+
+        // Sanitize: strip path separators to prevent traversal
+        filename = filename.replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: "..", with: "_")
 
         let fileURL = targetDir.appendingPathComponent(filename)
 
@@ -123,13 +129,19 @@ class FileTreeViewController: NSViewController, NSOutlineViewDataSource, NSOutli
         }
 
         // Create empty file
-        FileManager.default.createFile(atPath: fileURL.path, contents: nil)
+        guard FileManager.default.createFile(atPath: fileURL.path, contents: nil) else {
+            let errorAlert = NSAlert()
+            errorAlert.messageText = "Could not create file"
+            errorAlert.informativeText = "The directory may be read-only."
+            errorAlert.runModal()
+            return
+        }
 
-        // Refresh the tree
-        if let parent = selectedNode(), parent.isDirectory {
-            parent.children = nil
-            parent.loadChildren()
-            outlineView.reloadItem(parent, reloadChildren: true)
+        // Refresh the tree using the pre-captured node
+        if let node = targetNode, node.isDirectory {
+            node.children = nil
+            node.loadChildren()
+            outlineView.reloadItem(node, reloadChildren: true)
         } else {
             rootNode?.children = nil
             rootNode?.loadChildren()
