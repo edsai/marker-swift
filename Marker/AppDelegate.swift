@@ -56,9 +56,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
         let dirPath = (path as NSString).deletingLastPathComponent
         let resolved = Self.resolveImagePaths(in: fileContent.content, baseDir: dirPath)
 
-        // Set file's parent directory as the file tree root if none is set
+        // Update file tree to show the opened file's parent directory
+        // if no folder is set or if the file is outside the current root
         let dirURL = URL(fileURLWithPath: dirPath)
-        if windowController.fileTreeVC.rootURL == nil {
+        let currentRoot = windowController.fileTreeVC.rootURL
+        let fileOutsideRoot = currentRoot != nil && !dirPath.hasPrefix(currentRoot!.path)
+        if currentRoot == nil || fileOutsideRoot {
             windowController.fileTreeVC.rootURL = dirURL
             windowController.fileWatcher.watch(directory: dirURL)
             windowController.window?.title = "Marker — \(dirURL.lastPathComponent)"
