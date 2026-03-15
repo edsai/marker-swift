@@ -44,7 +44,7 @@ struct MenuBuilder {
         let reopenItem = fileMenu.addItem(withTitle: "Reopen Closed Tab", action: #selector(AppDelegate.reopenClosedTab), keyEquivalent: "T")
         reopenItem.keyEquivalentModifierMask = [.command, .shift]
 
-        let fileMenuItem = NSMenuItem()
+        let fileMenuItem = NSMenuItem(title: "File", action: nil, keyEquivalent: "")
         fileMenuItem.submenu = fileMenu
         mainMenu.addItem(fileMenuItem)
 
