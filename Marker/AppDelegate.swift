@@ -39,18 +39,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
     }
 
     func openFile(path: String) {
-        guard let data = FileManager.default.contents(atPath: path),
-              let content = String(data: data, encoding: .utf8) else { return }
+        let fileContent: FileContent
+        do {
+            fileContent = try FileIO.readFile(at: path)
+        } catch {
+            NSLog("Marker: Failed to read file: \(error)")
+            return
+        }
+
         let tabId = "tab-\(Int(Date().timeIntervalSince1970 * 1000))"
         let title = (path as NSString).lastPathComponent
         let dirPath = (path as NSString).deletingLastPathComponent
-
-        // Transform relative image paths to marker-file:// absolute URLs
-        let resolved = Self.resolveImagePaths(in: content, baseDir: dirPath)
+        let resolved = Self.resolveImagePaths(in: fileContent.content, baseDir: dirPath)
 
         windowController.editorVC?.bridge.openTab(id: tabId, content: resolved) { [weak self] success in
             guard success else { return }
             self?.windowController.tabManager.addTab(id: tabId, title: title, filePath: path)
+            // Update status bar with file metadata
+            self?.windowController.statusBarView.updateEncoding(fileContent.encoding.displayName)
+            self?.windowController.statusBarView.updateLineEnding(fileContent.lineEnding.rawValue)
         }
     }
 
