@@ -13,6 +13,7 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     // WKWebView is passed in from AppDelegate (will be extracted to EditorWebViewController in B3)
     var webView: WKWebView? {
         didSet {
+            oldValue?.removeFromSuperview()
             guard let webView = webView else { return }
             webView.translatesAutoresizingMaskIntoConstraints = false
             centerContainer.addSubview(webView)

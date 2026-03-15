@@ -36,7 +36,7 @@ Replaces the Tauri version at `/Users/esaipetch/devwork/marker`.
 **Architecture (LOCKED — do not change these decisions):**
 - **Single WKWebView** — TabPool.ts manages multiple Crepe instances inside one WebView via display:none/block
 - **Custom tab bar** (NSView subclass) — NOT NSWindow.tabbingMode (which creates separate windows)
-- **Swift→JS:** `webView.evaluateJavaScript("window.marker.xxx()")`
+- **Swift→JS:** `webView.callAsyncJavaScript("await marker.xxx(args)", arguments: [...], in: nil, in: .page)` — all marker.* functions are async; `evaluateJavaScript` fails with "unsupported type" on Promises. Use `callAsyncJavaScript` for all Swift→JS calls. Use `evaluateJavaScript` only for sync checks like `typeof window.marker`.
 - **JS→Swift:** `window.webkit.messageHandlers.marker.postMessage({type, ...})`
 - **getMarkdown uses callback pattern** — Swift calls requestMarkdown, JS posts back via postMessage
 - **Debounce timings:** cursor position 100ms, content change fires on every `input` event (no debounce), mermaid observer 200ms. These are tuned values.

@@ -24,6 +24,13 @@ final class TabManagerTests: XCTestCase {
         XCTAssertEqual(manager.activeTabId, "t2")
     }
 
+    func testAddDuplicateIdIsIgnored() {
+        manager.addTab(id: "t1", title: "One")
+        manager.addTab(id: "t1", title: "Duplicate")
+        XCTAssertEqual(manager.count, 1)
+        XCTAssertEqual(manager.tab(for: "t1")?.title, "One")
+    }
+
     // MARK: - Switch
 
     func testSwitchToExistingTab() {

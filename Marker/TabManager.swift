@@ -36,6 +36,7 @@ class TabManager {
     // MARK: - Add
 
     func addTab(id: String, title: String, filePath: String? = nil) {
+        guard !tabs.contains(where: { $0.id == id }) else { return }
         let tab = Tab(id: id, title: title, filePath: filePath)
         tabs.append(tab)
         activeTabId = id

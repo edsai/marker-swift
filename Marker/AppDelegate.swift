@@ -6,6 +6,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     var webView: WKWebView!
     var pendingFiles: [String] = []
     private var messageHandler: MessageHandler?
+    private var bridgeReady = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("Marker: applicationDidFinishLaunching")
@@ -55,16 +56,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     // WKNavigationDelegate
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         NSLog("Marker: page finished loading")
+    }
 
-        webView.evaluateJavaScript("typeof window.marker") { result, error in
-            if let result = result as? String, result == "object" {
-                NSLog("Marker: bridge loaded OK, opening pending files")
-                for file in self.pendingFiles {
-                    self.openFile(path: file)
-                }
-                self.pendingFiles.removeAll()
-            }
+    /// Called by MessageHandler when JS bridge posts "ready"
+    func bridgeDidBecomeReady() {
+        guard !bridgeReady else { return }  // Guard against duplicate "ready" messages
+        bridgeReady = true
+        NSLog("Marker: bridge ready, opening \(pendingFiles.count) pending files")
+        for file in pendingFiles {
+            openFile(path: file)
         }
+        pendingFiles.removeAll()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -77,7 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
 
     func application(_ application: NSApplication, openFiles filenames: [String]) {
         for filename in filenames {
-            if webView != nil {
+            if bridgeReady {
                 openFile(path: filename)
             } else {
                 pendingFiles.append(filename)
@@ -142,6 +144,7 @@ class MessageHandler: NSObject, WKScriptMessageHandler {
             NSLog("Marker: editor ready")
             // Register the welcome tab that marker.init() auto-creates (JS uses id "welcome")
             appDelegate?.windowController.tabManager.addTab(id: "welcome", title: "Welcome")
+            appDelegate?.bridgeDidBecomeReady()
         case "markdown", "evicted", "imagePaste":
             // Handled in later issues
             break
