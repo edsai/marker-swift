@@ -6,6 +6,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
     private var bridgeReady = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = MenuBuilder.buildMainMenu()
         NSLog("Marker: applicationDidFinishLaunching")
 
         windowController = MainWindowController()
@@ -160,5 +161,93 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
     func editor(didPasteImage tabId: String, base64: String, fileExtension: String) {
         // Used by B7 (image save) — log for now
         NSLog("Marker: image pasted in \(tabId)")
+    }
+
+    // MARK: - Menu Actions
+
+    @objc func newTab() {
+        windowController.tabBarDidRequestNewTab()
+    }
+
+    @objc func openFileDialog() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.allowedContentTypes = [.init(filenameExtension: "md")!, .init(filenameExtension: "markdown")!, .plainText]
+
+        panel.beginSheetModal(for: windowController.window!) { [weak self] response in
+            guard response == .OK else { return }
+            for url in panel.urls {
+                self?.openFile(path: url.path)
+            }
+        }
+    }
+
+    @objc func openFolderDialog() {
+        windowController.openFolder()
+    }
+
+    @objc func saveCurrentTab() {
+        guard let tab = windowController.tabManager.activeTab,
+              let path = tab.filePath else {
+            saveCurrentTabAs()  // No file path → Save As
+            return
+        }
+
+        windowController.editorVC?.bridge.requestMarkdown(id: tab.id) { [weak self] content in
+            guard let content = content else { return }
+            // TODO: Store encoding/lineEnding per tab (B9). For now use defaults.
+            do {
+                try FileIO.writeFile(at: path, content: content, encoding: .utf8, lineEnding: .lf)
+                self?.windowController.tabManager.setDirty(id: tab.id, isDirty: false)
+                NSLog("Marker: saved \(path)")
+            } catch {
+                NSLog("Marker: save failed: \(error)")
+            }
+        }
+    }
+
+    @objc func saveCurrentTabAs() {
+        guard let tab = windowController.tabManager.activeTab else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.init(filenameExtension: "md")!]
+        panel.nameFieldStringValue = tab.title
+
+        panel.beginSheetModal(for: windowController.window!) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+
+            self?.windowController.editorVC?.bridge.requestMarkdown(id: tab.id) { content in
+                guard let content = content else { return }
+                do {
+                    try FileIO.writeFile(at: url.path, content: content, encoding: .utf8, lineEnding: .lf)
+                    // Update tab with new file path
+                    // For now just clear dirty since TabManager doesn't support updating filePath
+                    self?.windowController.tabManager.setDirty(id: tab.id, isDirty: false)
+                    NSLog("Marker: saved as \(url.path)")
+                } catch {
+                    NSLog("Marker: save as failed: \(error)")
+                }
+            }
+        }
+    }
+
+    @objc func closeCurrentTab() {
+        guard let tab = windowController.tabManager.activeTab else { return }
+        windowController.tabManager.closeTab(id: tab.id)
+    }
+
+    @objc func toggleSidebar() {
+        windowController.toggleLeftSidebar()
+    }
+
+    @objc func toggleOutline() {
+        windowController.toggleRightSidebar()
+    }
+
+    @objc func showPreferences() {
+        // B9c will implement preferences window
+        NSLog("Marker: preferences not yet implemented")
     }
 }
