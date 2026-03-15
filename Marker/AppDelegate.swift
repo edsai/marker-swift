@@ -28,12 +28,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         webView.autoresizingMask = [.width, .height]
         window.contentView?.addSubview(webView)
 
-        // Load editor
-        if let editorURL = Bundle.main.url(forResource: "editor", withExtension: "html", subdirectory: "Resources") {
-            webView.loadFileURL(editorURL, allowingReadAccessTo: editorURL.deletingLastPathComponent())
+        // Load editor — try with and without subdirectory
+        let editorURL = Bundle.main.url(forResource: "editor", withExtension: "html", subdirectory: "Resources")
+            ?? Bundle.main.url(forResource: "editor", withExtension: "html")
+        if let url = editorURL {
+            webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        } else {
+            print("ERROR: editor.html not found in bundle!")
+            print("Bundle path: \(Bundle.main.bundlePath)")
+            print("Resource path: \(Bundle.main.resourcePath ?? "nil")")
         }
 
         window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
 
         // Initialize editor after page loads
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {

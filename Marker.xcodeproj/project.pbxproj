@@ -51,8 +51,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = B28D12255213E309549F9B7C /* Build configuration list for PBXNativeTarget "Marker" */;
 			buildPhases = (
-				0C6FAE98A671D18C31DC815A /* Build Editor Bundle */,
 				10F9006E7F574340EA1FC484 /* Sources */,
+				4A62B17AF063D372F4355681 /* Copy Editor Resources */,
 			);
 			buildRules = (
 			);
@@ -99,7 +99,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		0C6FAE98A671D18C31DC815A /* Build Editor Bundle */ = {
+		4A62B17AF063D372F4355681 /* Copy Editor Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -109,14 +109,14 @@
 			);
 			inputPaths = (
 			);
-			name = "Build Editor Bundle";
+			name = "Copy Editor Resources";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/../marker\"\nnpm run build:webview\ncp dist-editor/* \"$SRCROOT/Marker/Resources/\" 2>/dev/null || true\n";
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -R \"${SRCROOT}/Marker/Resources/\"* \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

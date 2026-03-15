@@ -10,10 +10,9 @@ targets:
     type: application
     platform: macOS
     sources:
-      - Marker
-    resources:
-      - path: Marker/Resources
-        buildPhase: resources
+      - path: Marker
+        excludes:
+          - Resources/**
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.marker.app
@@ -24,10 +23,9 @@ targets:
         SWIFT_VERSION: "5.9"
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
-    preBuildScripts:
-      - name: Build Editor Bundle
+    postCompileScripts:
+      - name: Copy Editor Resources
         script: |
-          cd "$SRCROOT/../marker"
-          npm run build:webview
-          cp dist-editor/* "$SRCROOT/Marker/Resources/" 2>/dev/null || true
+          mkdir -p "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
+          cp -R "${SRCROOT}/Marker/Resources/"* "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
         basedOnDependencyAnalysis: false
