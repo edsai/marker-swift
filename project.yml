@@ -29,3 +29,14 @@ targets:
           mkdir -p "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
           cp -R "${SRCROOT}/Marker/Resources/"* "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
         basedOnDependencyAnalysis: false
+  MarkerTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: MarkerTests
+    dependencies:
+      - target: Marker
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
