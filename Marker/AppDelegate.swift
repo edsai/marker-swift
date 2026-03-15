@@ -56,6 +56,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
         let dirPath = (path as NSString).deletingLastPathComponent
         let resolved = Self.resolveImagePaths(in: fileContent.content, baseDir: dirPath)
 
+        // Set file's parent directory as the file tree root if none is set
+        let dirURL = URL(fileURLWithPath: dirPath)
+        if windowController.fileTreeVC.rootURL == nil {
+            windowController.fileTreeVC.rootURL = dirURL
+            windowController.fileWatcher.watch(directory: dirURL)
+            windowController.window?.title = "Marker — \(dirURL.lastPathComponent)"
+        }
+
         windowController.editorVC?.bridge.openTab(id: tabId, content: resolved) { [weak self] success in
             guard success else { return }
             self?.windowController.tabManager.addTab(id: tabId, title: title, filePath: path)
