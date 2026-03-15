@@ -264,6 +264,16 @@ extension MainWindowController: TabManagerDelegate {
                 window?.title = "Marker — \(dirURL.lastPathComponent)"
             }
         }
+
+        // Re-run search on the new tab if find bar is open
+        if !findBarView.isHidden {
+            let query = findBarView.searchField.stringValue
+            if query.isEmpty {
+                findBarView.updateResults(count: 0, index: -1)
+            } else {
+                findBar(findBarView, didSearchFor: query, options: findBarView.options)
+            }
+        }
     }
 
     func tabManager(_ manager: TabManager, didClose tab: Tab) {

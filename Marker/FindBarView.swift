@@ -9,7 +9,7 @@ protocol FindBarDelegate: AnyObject {
     func findBarDidClose(_ bar: FindBarView)
 }
 
-class FindBarView: NSView {
+class FindBarView: NSView, NSSearchFieldDelegate {
     struct Options {
         var caseSensitive: Bool = false
         var wholeWord: Bool = false
@@ -32,6 +32,7 @@ class FindBarView: NSView {
 
     private var showReplace = false
     private var replaceRow: NSStackView!
+    private var lastQuery = ""  // Track if query changed vs same (for Enter = next)
 
     var options = Options()
 
@@ -56,8 +57,9 @@ class FindBarView: NSView {
         // Search row
         searchField.placeholderString = "Find"
         searchField.font = NSFont.systemFont(ofSize: 12)
+        searchField.delegate = self  // For controlTextDidChange (live search)
         searchField.target = self
-        searchField.action = #selector(searchChanged)
+        searchField.action = #selector(enterPressed)  // Enter = next match
         searchField.translatesAutoresizingMaskIntoConstraints = false
 
         for btn in [nextButton, prevButton, closeButton, caseSensitiveButton, wholeWordButton, regexButton] {
@@ -143,6 +145,46 @@ class FindBarView: NSView {
         layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
     }
 
+    // MARK: - Keyboard
+
+    /// Escape closes the find bar
+    override func cancelOperation(_ sender: Any?) {
+        hide()
+    }
+
+    /// Cmd+G / Cmd+Shift+G from within the search field
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard !isHidden else { return super.performKeyEquivalent(with: event) }
+        if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "g" {
+            if event.modifierFlags.contains(.shift) {
+                delegate?.findBarDidRequestPrev(self)
+            } else {
+                delegate?.findBarDidRequestNext(self)
+            }
+            return true
+        }
+        // Escape
+        if event.keyCode == 53 {
+            hide()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    // MARK: - NSSearchFieldDelegate — live search on every keystroke
+
+    func controlTextDidChange(_ obj: Notification) {
+        let query = searchField.stringValue
+        if query.isEmpty {
+            resultLabel.stringValue = ""
+            lastQuery = ""
+            delegate?.findBarDidClose(self)  // Clear highlights
+            return
+        }
+        lastQuery = query
+        delegate?.findBar(self, didSearchFor: query, options: options)
+    }
+
     // MARK: - Public
 
     func show(withReplace: Bool = false) {
@@ -155,6 +197,7 @@ class FindBarView: NSView {
 
     func hide() {
         isHidden = true
+        invalidateIntrinsicContentSize()
         delegate?.findBarDidClose(self)
     }
 
@@ -168,14 +211,11 @@ class FindBarView: NSView {
 
     // MARK: - Actions
 
-    @objc private func searchChanged() {
+    /// Enter in the search field = find next (not re-search)
+    @objc private func enterPressed() {
         let query = searchField.stringValue
-        if query.isEmpty {
-            resultLabel.stringValue = ""
-            delegate?.findBarDidClose(self)  // Clear highlights
-            return
-        }
-        delegate?.findBar(self, didSearchFor: query, options: options)
+        guard !query.isEmpty else { return }
+        delegate?.findBarDidRequestNext(self)
     }
 
     @objc private func nextClicked() { delegate?.findBarDidRequestNext(self) }
@@ -193,18 +233,18 @@ class FindBarView: NSView {
     @objc private func toggleCaseSensitive() {
         options.caseSensitive.toggle()
         caseSensitiveButton.contentTintColor = options.caseSensitive ? .controlAccentColor : .secondaryLabelColor
-        searchChanged()
+        controlTextDidChange(Notification(name: NSControl.textDidChangeNotification))
     }
 
     @objc private func toggleWholeWord() {
         options.wholeWord.toggle()
         wholeWordButton.contentTintColor = options.wholeWord ? .controlAccentColor : .secondaryLabelColor
-        searchChanged()
+        controlTextDidChange(Notification(name: NSControl.textDidChangeNotification))
     }
 
     @objc private func toggleRegex() {
         options.useRegex.toggle()
         regexButton.contentTintColor = options.useRegex ? .controlAccentColor : .secondaryLabelColor
-        searchChanged()
+        controlTextDidChange(Notification(name: NSControl.textDidChangeNotification))
     }
 }

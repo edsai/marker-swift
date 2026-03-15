@@ -54,7 +54,7 @@ struct MenuBuilder {
         editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editMenu.addItem(NSMenuItem.separator())
         editMenu.addItem(withTitle: "Find…", action: #selector(AppDelegate.showFind), keyEquivalent: "f")
-        let findReplace = editMenu.addItem(withTitle: "Find and Replace…", action: #selector(AppDelegate.showFindReplace), keyEquivalent: "h")
+        let findReplace = editMenu.addItem(withTitle: "Find and Replace…", action: #selector(AppDelegate.showFindReplace), keyEquivalent: "f")
         findReplace.keyEquivalentModifierMask = [.command, .option]
         editMenu.addItem(withTitle: "Find Next", action: #selector(AppDelegate.findNext), keyEquivalent: "g")
         let findPrevItem = editMenu.addItem(withTitle: "Find Previous", action: #selector(AppDelegate.findPrevious), keyEquivalent: "G")
