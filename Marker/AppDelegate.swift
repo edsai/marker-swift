@@ -130,6 +130,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
         return true
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            windowController.showWindow(nil)
+        }
+        return true
+    }
+
     // MARK: - EditorDelegate
 
     func editorDidBecomeReady() {
