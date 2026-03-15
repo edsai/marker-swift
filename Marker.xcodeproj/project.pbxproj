@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		751B52DD314B20E8FBDBFB58 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE00314F636B96E041D69FD /* main.swift */; };
 		CDEE81672D3C69789455BAE2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927203E14146C707ED6DF35B /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -15,6 +16,7 @@
 		6E59A6366F9B55652046DEE9 /* Marker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Marker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		71055F046DFB8EE9DC994F43 /* Marker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Marker.entitlements; sourceTree = "<group>"; };
 		927203E14146C707ED6DF35B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		DFE00314F636B96E041D69FD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -23,6 +25,7 @@
 			children = (
 				927203E14146C707ED6DF35B /* AppDelegate.swift */,
 				624E30132E40B5140B80FD2E /* Info.plist */,
+				DFE00314F636B96E041D69FD /* main.swift */,
 				71055F046DFB8EE9DC994F43 /* Marker.entitlements */,
 			);
 			path = Marker;
@@ -126,6 +129,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CDEE81672D3C69789455BAE2 /* AppDelegate.swift in Sources */,
+				751B52DD314B20E8FBDBFB58 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

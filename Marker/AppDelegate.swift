@@ -1,7 +1,6 @@
 import Cocoa
 import WebKit
 
-@main
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     var webView: WKWebView!
@@ -28,9 +27,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         webView.autoresizingMask = [.width, .height]
         window.contentView?.addSubview(webView)
 
-        // Load editor — try with and without subdirectory
-        let editorURL = Bundle.main.url(forResource: "editor", withExtension: "html", subdirectory: "Resources")
-            ?? Bundle.main.url(forResource: "editor", withExtension: "html")
+        // Load editor from bundle resources
+        let editorURL = Bundle.main.url(forResource: "editor", withExtension: "html")
         if let url = editorURL {
             webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
         } else {
