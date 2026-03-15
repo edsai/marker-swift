@@ -1,0 +1,33 @@
+name: Marker
+options:
+  bundleIdPrefix: com.marker
+  deploymentTarget:
+    macOS: "12.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+targets:
+  Marker:
+    type: application
+    platform: macOS
+    sources:
+      - Marker
+    resources:
+      - path: Marker/Resources
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.marker.app
+        PRODUCT_NAME: Marker
+        INFOPLIST_FILE: Marker/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Marker/Marker.entitlements
+        MACOSX_DEPLOYMENT_TARGET: "12.0"
+        SWIFT_VERSION: "5.9"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+    preBuildScripts:
+      - name: Build Editor Bundle
+        script: |
+          cd "$SRCROOT/../marker"
+          npm run build:webview
+          cp dist-editor/* "$SRCROOT/Marker/Resources/" 2>/dev/null || true
+        basedOnDependencyAnalysis: false

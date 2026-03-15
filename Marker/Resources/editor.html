@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: marker-file: blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+  <style>
+    body { margin: 0; padding: 0; background: #1e1e1e; color: #ccc; font-family: -apple-system, sans-serif; overflow: hidden; height: 100vh; }
+    #editor-host { height: 100vh; overflow: hidden; position: relative; }
+    .editor-tab-container { padding: 6px clamp(2px, 0.75vw, 12px); }
+    .milkdown { max-width: none; }
+    .milkdown, .milkdown .editor, .milkdown .ProseMirror { background: transparent !important; color: var(--text-primary, #ccc) !important; }
+    .milkdown .ProseMirror { padding: 4px 28px 4px 40px !important; margin: 0 !important; }
+    .milkdown-block-handle { gap: 0 !important; transform: translateY(7px) translateX(15px); }
+    .milkdown-block-handle .operation-item { width: 20px !important; height: 20px !important; padding: 2px !important; }
+    .milkdown-block-handle .operation-item svg { width: 16px !important; height: 16px !important; }
+    .search-highlight { background: rgba(255, 215, 0, 0.3); border-radius: 2px; }
+    .search-current { background: rgba(255, 165, 0, 0.5); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="editor-host"></div>
+  <script type="module" src="./editor.js"></script>
+</body>
+</html>
