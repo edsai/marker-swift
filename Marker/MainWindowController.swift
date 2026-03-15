@@ -4,7 +4,7 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     let tabManager = TabManager()
     let tabBarView = TabBarView()
     private let splitView = NSSplitView()
-    private let leftSidebar = SidebarPlaceholderView(title: "Files")
+    let fileTreeVC = FileTreeViewController()
     let centerContainer = NSView()  // Public for B3 webview swap
     private let rightSidebar = SidebarPlaceholderView(title: "Outline")
     private let statusBar = NSTextField(labelWithString: "")
@@ -64,11 +64,11 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
         splitView.delegate = self
         splitView.translatesAutoresizingMaskIntoConstraints = false
 
-        leftSidebar.translatesAutoresizingMaskIntoConstraints = false
+        fileTreeVC.view.translatesAutoresizingMaskIntoConstraints = false
         centerContainer.translatesAutoresizingMaskIntoConstraints = false
         rightSidebar.translatesAutoresizingMaskIntoConstraints = false
 
-        splitView.addArrangedSubview(leftSidebar)
+        splitView.addArrangedSubview(fileTreeVC.view)
         splitView.addArrangedSubview(centerContainer)
         splitView.addArrangedSubview(rightSidebar)
 
@@ -118,6 +118,7 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     private func setupTabBar() {
         tabBarView.delegate = self
         tabManager.delegate = self
+        fileTreeVC.delegate = self
     }
 
     // MARK: - Public API
@@ -127,8 +128,22 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     }
 
     func toggleLeftSidebar() {
-        let isCollapsed = splitView.isSubviewCollapsed(leftSidebar)
+        let isCollapsed = splitView.isSubviewCollapsed(fileTreeVC.view)
         splitView.setPosition(isCollapsed ? 220 : 0, ofDividerAt: 0)
+    }
+
+    func openFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose a folder to open"
+
+        panel.beginSheetModal(for: window!) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.fileTreeVC.rootURL = url
+            self?.window?.title = "Marker — \(url.lastPathComponent)"
+        }
     }
 
     func toggleRightSidebar() {
@@ -140,7 +155,7 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     // MARK: - NSSplitViewDelegate
 
     func splitView(_ splitView: NSSplitView, canCollapseSubview subview: NSView) -> Bool {
-        return subview === leftSidebar || subview === rightSidebar
+        return subview === fileTreeVC.view || subview === rightSidebar
     }
 
     func splitView(_ splitView: NSSplitView, shouldCollapseSubview subview: NSView, forDoubleClickOnDividerAt dividerIndex: Int) -> Bool {
@@ -201,5 +216,19 @@ extension MainWindowController: TabManagerDelegate {
 
     func tabManager(_ manager: TabManager, didUpdateDirty tab: Tab) {
         tabBarView.updateDirty(id: tab.id, isDirty: tab.isDirty)
+    }
+}
+
+// MARK: - FileTreeDelegate
+
+extension MainWindowController: FileTreeDelegate {
+    func fileTree(didSelectFile url: URL) {
+        // Check if file is already open
+        if let existing = tabManager.tabByFilePath(url.path) {
+            tabManager.switchTo(id: existing.id)
+            return
+        }
+        // Open file via AppDelegate (which handles content reading + bridge call)
+        (NSApp.delegate as? AppDelegate)?.openFile(path: url.path)
     }
 }
