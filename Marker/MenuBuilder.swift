@@ -32,6 +32,9 @@ struct MenuBuilder {
         fileMenu.addItem(NSMenuItem.separator())
         fileMenu.addItem(withTitle: "Open File…", action: #selector(AppDelegate.openFileDialog), keyEquivalent: "o")
         fileMenu.addItem(withTitle: "Open Folder…", action: #selector(AppDelegate.openFolderDialog), keyEquivalent: "O")
+        let recentMenu = NSMenu(title: "Open Recent")
+        let recentItem = fileMenu.addItem(withTitle: "Open Recent", action: nil, keyEquivalent: "")
+        recentItem.submenu = recentMenu
         fileMenu.addItem(NSMenuItem.separator())
         fileMenu.addItem(withTitle: "Save", action: #selector(AppDelegate.saveCurrentTab), keyEquivalent: "s")
         let saveAs = fileMenu.addItem(withTitle: "Save As…", action: #selector(AppDelegate.saveCurrentTabAs), keyEquivalent: "S")

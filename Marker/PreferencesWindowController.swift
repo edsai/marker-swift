@@ -4,10 +4,12 @@ class PreferencesWindowController: NSWindowController {
     private let fontSizeField = NSTextField()
     private let fontFamilyPopup = NSPopUpButton()
     private let themePopup = NSPopUpButton()
+    private let autoSaveCheckbox = NSButton(checkboxWithTitle: "Auto-save every", target: nil, action: nil)
+    private let autoSaveIntervalField = NSTextField()
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 340),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -78,6 +80,20 @@ class PreferencesWindowController: NSWindowController {
         familyRow.addArrangedSubview(fontFamilyPopup)
         stack.addArrangedSubview(familyRow)
 
+        // Auto-save
+        let autoSaveRow = NSStackView()
+        autoSaveRow.orientation = .horizontal
+        autoSaveRow.spacing = 8
+        autoSaveCheckbox.target = self
+        autoSaveCheckbox.action = #selector(applyPreferences)
+        autoSaveIntervalField.placeholderString = "60"
+        autoSaveIntervalField.widthAnchor.constraint(equalToConstant: 50).isActive = true
+        let secLabel = NSTextField(labelWithString: "seconds")
+        autoSaveRow.addArrangedSubview(autoSaveCheckbox)
+        autoSaveRow.addArrangedSubview(autoSaveIntervalField)
+        autoSaveRow.addArrangedSubview(secLabel)
+        stack.addArrangedSubview(autoSaveRow)
+
         // Apply button
         let applyButton = NSButton(title: "Apply", target: self, action: #selector(applyPreferences))
         applyButton.bezelStyle = .rounded
@@ -91,18 +107,24 @@ class PreferencesWindowController: NSWindowController {
         fontFamilyPopup.selectItem(withTitle: family)
         let theme = defaults.string(forKey: "editorTheme") ?? "System"
         themePopup.selectItem(withTitle: theme)
+        autoSaveCheckbox.state = defaults.bool(forKey: "autoSaveEnabled") ? .on : .off
+        let interval = defaults.integer(forKey: "autoSaveInterval")
+        autoSaveIntervalField.integerValue = interval > 0 ? interval : 60
     }
 
     @objc private func applyPreferences() {
         let defaults = UserDefaults.standard
         let fontSize = fontSizeField.integerValue > 0 ? fontSizeField.integerValue : 16
         let fontFamily = fontFamilyPopup.titleOfSelectedItem ?? "System Default"
-
         let theme = themePopup.titleOfSelectedItem ?? "System"
+        let autoSaveEnabled = autoSaveCheckbox.state == .on
+        let autoSaveInterval = autoSaveIntervalField.integerValue > 0 ? autoSaveIntervalField.integerValue : 60
 
         defaults.set(fontSize, forKey: "editorFontSize")
         defaults.set(fontFamily, forKey: "editorFontFamily")
         defaults.set(theme, forKey: "editorTheme")
+        defaults.set(autoSaveEnabled, forKey: "autoSaveEnabled")
+        defaults.set(autoSaveInterval, forKey: "autoSaveInterval")
 
         // Apply to editor via bridge
         if let appDelegate = NSApp.delegate as? AppDelegate {
@@ -111,6 +133,7 @@ class PreferencesWindowController: NSWindowController {
                 appDelegate.windowController.editorVC?.bridge.setFontFamily(fontFamily)
             }
             appDelegate.applyTheme(theme)
+            appDelegate.configureAutoSave()
         }
     }
 }

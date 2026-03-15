@@ -154,6 +154,13 @@ class MarkerBridge {
         callAsync("marker.clearSearch(tabId)", arguments: ["tabId": tabId])
     }
 
+    // MARK: - Text Insertion
+
+    func insertText(tabId: String, text: String) {
+        callAsync("marker.insertText(tabId, text)",
+                  arguments: ["tabId": tabId, "text": text])
+    }
+
     // MARK: - Word Count
 
     func getWordCount(tabId: String, completion: @escaping (Int) -> Void) {

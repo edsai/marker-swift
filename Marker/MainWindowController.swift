@@ -277,6 +277,8 @@ extension MainWindowController: TabManagerDelegate {
                 fileWatcher.watch(directory: dirURL)
                 window?.title = "Marker — \(dirURL.lastPathComponent)"
             }
+            // Highlight the current file in the file tree
+            fileTreeVC.selectFile(at: URL(fileURLWithPath: path))
         }
 
         // Re-run search on the new tab if find bar is open

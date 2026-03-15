@@ -5,6 +5,83 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
     var pendingFiles: [String] = []
     private var bridgeReady = false
     private var preferencesController: PreferencesWindowController?
+    private var autoSaveTimer: Timer?
+
+    // MARK: - Recent Files
+
+    private static let maxRecentFiles = 10
+    private static let recentFilesKey = "recentFiles"
+
+    private func addToRecentFiles(_ path: String) {
+        var recents = UserDefaults.standard.stringArray(forKey: Self.recentFilesKey) ?? []
+        recents.removeAll { $0 == path }
+        recents.insert(path, at: 0)
+        if recents.count > Self.maxRecentFiles {
+            recents = Array(recents.prefix(Self.maxRecentFiles))
+        }
+        UserDefaults.standard.set(recents, forKey: Self.recentFilesKey)
+        rebuildRecentFilesMenu()
+    }
+
+    func rebuildRecentFilesMenu() {
+        guard let recentMenu = NSApp.mainMenu?.item(withTitle: "File")?.submenu?.item(withTitle: "Open Recent")?.submenu else { return }
+        recentMenu.removeAllItems()
+
+        let recents = UserDefaults.standard.stringArray(forKey: Self.recentFilesKey) ?? []
+        for path in recents {
+            let title = (path as NSString).lastPathComponent
+            let item = NSMenuItem(title: title, action: #selector(openRecentFile(_:)), keyEquivalent: "")
+            item.representedObject = path
+            item.target = self
+            recentMenu.addItem(item)
+        }
+
+        if !recents.isEmpty {
+            recentMenu.addItem(NSMenuItem.separator())
+            let clearItem = NSMenuItem(title: "Clear Menu", action: #selector(clearRecentFiles), keyEquivalent: "")
+            clearItem.target = self
+            recentMenu.addItem(clearItem)
+        }
+    }
+
+    @objc private func openRecentFile(_ sender: NSMenuItem) {
+        guard let path = sender.representedObject as? String else { return }
+        openFile(path: path)
+    }
+
+    @objc private func clearRecentFiles() {
+        UserDefaults.standard.removeObject(forKey: Self.recentFilesKey)
+        rebuildRecentFilesMenu()
+    }
+
+    // MARK: - Auto-save
+
+    func configureAutoSave() {
+        autoSaveTimer?.invalidate()
+        autoSaveTimer = nil
+
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: "autoSaveEnabled") else { return }
+        let interval = TimeInterval(max(defaults.integer(forKey: "autoSaveInterval"), 10))
+
+        autoSaveTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.autoSaveAllDirtyTabs()
+        }
+    }
+
+    private func autoSaveAllDirtyTabs() {
+        let dirtyTabs = windowController.tabManager.tabs.filter { $0.isDirty && $0.filePath != nil }
+        for tab in dirtyTabs {
+            guard let path = tab.filePath else { continue }
+            windowController.editorVC?.bridge.requestMarkdown(id: tab.id) { [weak self] content in
+                guard let content = content else { return }
+                let enc: FileEncoding = tab.encoding == "UTF-8 BOM" ? .utf8BOM : (tab.encoding == "Latin-1" ? .latin1 : .utf8)
+                let le: LineEnding = tab.lineEnding == "CRLF" ? .crlf : .lf
+                try? FileIO.writeFile(at: path, content: content, encoding: enc, lineEnding: le)
+                self?.windowController.tabManager.setDirty(id: tab.id, isDirty: false)
+            }
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MenuBuilder.buildMainMenu()
@@ -79,6 +156,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
             // Update status bar with file metadata
             self?.windowController.statusBarView.updateEncoding(fileContent.encoding.displayName)
             self?.windowController.statusBarView.updateLineEnding(fileContent.lineEnding.rawValue)
+            // Track in recent files
+            self?.addToRecentFiles(path)
         }
     }
 
@@ -231,6 +310,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
         }
         let theme = defaults.string(forKey: "editorTheme") ?? "System"
         applyTheme(theme)
+
+        // Rebuild recent files menu from UserDefaults
+        rebuildRecentFilesMenu()
+
+        // Start auto-save timer if configured
+        configureAutoSave()
     }
 
     func applyTheme(_ theme: String) {
@@ -339,9 +424,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
         let markerURL = "marker-file://\(imagePath)"
         NSLog("Marker: image pasted in \(tabId), saved to \(imagePath)")
 
-        // TODO(B7): call bridge to insert the image into the editor at cursor position
-        // e.g. windowController.editorVC?.bridge.insertImage(tabId: tabId, url: markerURL)
-        _ = markerURL  // suppress unused-variable warning until wired
+        // Insert image markdown at cursor position via bridge
+        let imageMarkdown = "![](\(markerURL))"
+        windowController.editorVC?.bridge.insertText(tabId: tabId, text: imageMarkdown)
     }
 
     // MARK: - Menu Actions

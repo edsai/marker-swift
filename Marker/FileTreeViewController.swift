@@ -263,4 +263,24 @@ class FileTreeViewController: NSViewController, NSOutlineViewDataSource, NSOutli
         guard let node = notification.userInfo?["NSObject"] as? FileNode else { return }
         node.loadChildren()
     }
+
+    // MARK: - Public Selection API
+
+    func selectFile(at url: URL) {
+        guard rootNode != nil else { return }
+        if let row = findRow(for: url) {
+            outlineView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+            outlineView.scrollRowToVisible(row)
+        }
+    }
+
+    private func findRow(for url: URL) -> Int? {
+        for row in 0..<outlineView.numberOfRows {
+            if let item = outlineView.item(atRow: row) as? FileNode,
+               item.url == url {
+                return row
+            }
+        }
+        return nil
+    }
 }
