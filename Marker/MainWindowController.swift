@@ -4,6 +4,7 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
     let tabManager = TabManager()
     let tabBarView = TabBarView()
     let findBarView = FindBarView()
+    private var findBarHeightConstraint: NSLayoutConstraint!
     let fileWatcher = FileWatcher()
     private let splitView = NSSplitView()
     let fileTreeVC = FileTreeViewController()
@@ -65,6 +66,10 @@ class MainWindowController: NSWindowController, NSSplitViewDelegate {
         findBarView.translatesAutoresizingMaskIntoConstraints = false
         findBarView.isHidden = true
         contentView.addSubview(findBarView)
+
+        // Zero-height constraint when hidden (isHidden alone doesn't collapse in manual AL)
+        findBarHeightConstraint = findBarView.heightAnchor.constraint(equalToConstant: 0)
+        findBarHeightConstraint.isActive = true
 
         splitView.isVertical = true
         splitView.dividerStyle = .thin
@@ -334,10 +339,12 @@ extension MainWindowController: FileWatcherDelegate {
 
 extension MainWindowController {
     func showFind() {
+        findBarHeightConstraint.isActive = false
         findBarView.show(withReplace: false)
     }
 
     func showFindReplace() {
+        findBarHeightConstraint.isActive = false
         findBarView.show(withReplace: true)
     }
 }
@@ -375,12 +382,16 @@ extension MainWindowController: FindBarDelegate {
     func findBar(_ bar: FindBarView, didReplaceAll replacement: String) {
         guard let tabId = tabManager.activeTabId else { return }
         let opts = bar.options
-        editorVC?.bridge.replaceAllMatches(tabId: tabId, query: bar.searchField.stringValue, replacement: replacement, caseSensitive: opts.caseSensitive, wholeWord: opts.wholeWord, useRegex: opts.useRegex) { _ in
-            bar.updateResults(count: 0, index: -1)
+        editorVC?.bridge.replaceAllMatches(tabId: tabId, query: bar.searchField.stringValue, replacement: replacement, caseSensitive: opts.caseSensitive, wholeWord: opts.wholeWord, useRegex: opts.useRegex) { replacedCount in
+            bar.showReplacedCount(replacedCount)
         }
     }
 
     func findBarDidClose(_ bar: FindBarView) {
+        // Collapse the find bar height when closed
+        if bar.isHidden {
+            findBarHeightConstraint.isActive = true
+        }
         guard let tabId = tabManager.activeTabId else { return }
         editorVC?.bridge.clearSearch(tabId: tabId)
     }

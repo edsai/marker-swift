@@ -421,10 +421,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, EditorDelegate {
     }
 
     @objc func findNext() {
+        if windowController.findBarView.isHidden {
+            windowController.showFind()
+            return
+        }
         windowController.findBarView.delegate?.findBarDidRequestNext(windowController.findBarView)
     }
 
     @objc func findPrevious() {
+        if windowController.findBarView.isHidden {
+            windowController.showFind()
+            return
+        }
         windowController.findBarView.delegate?.findBarDidRequestPrev(windowController.findBarView)
     }
 

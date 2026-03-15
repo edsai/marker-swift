@@ -167,17 +167,16 @@ class FindBarView: NSView, NSSearchFieldDelegate {
             }
             return true
         }
-        // Escape
-        if event.keyCode == 53 {
-            hide()
-            return true
-        }
         return super.performKeyEquivalent(with: event)
     }
 
     // MARK: - NSSearchFieldDelegate — live search on every keystroke
 
     func controlTextDidChange(_ obj: Notification) {
+        triggerSearch()
+    }
+
+    private func triggerSearch() {
         let query = searchField.stringValue
         if query.isEmpty {
             resultLabel.stringValue = ""
@@ -213,6 +212,10 @@ class FindBarView: NSView, NSSearchFieldDelegate {
         }
     }
 
+    func showReplacedCount(_ count: Int) {
+        resultLabel.stringValue = count > 0 ? "Replaced \(count)" : "No matches"
+    }
+
     // MARK: - Actions
 
     /// Enter in the search field = find next (not re-search)
@@ -237,18 +240,18 @@ class FindBarView: NSView, NSSearchFieldDelegate {
     @objc private func toggleCaseSensitive() {
         options.caseSensitive.toggle()
         caseSensitiveButton.contentTintColor = options.caseSensitive ? .controlAccentColor : .secondaryLabelColor
-        controlTextDidChange(Notification(name: NSControl.textDidChangeNotification))
+        triggerSearch()
     }
 
     @objc private func toggleWholeWord() {
         options.wholeWord.toggle()
         wholeWordButton.contentTintColor = options.wholeWord ? .controlAccentColor : .secondaryLabelColor
-        controlTextDidChange(Notification(name: NSControl.textDidChangeNotification))
+        triggerSearch()
     }
 
     @objc private func toggleRegex() {
         options.useRegex.toggle()
         regexButton.contentTintColor = options.useRegex ? .controlAccentColor : .secondaryLabelColor
-        controlTextDidChange(Notification(name: NSControl.textDidChangeNotification))
+        triggerSearch()
     }
 }
