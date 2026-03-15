@@ -14,6 +14,8 @@
     <string>APPL</string>
     <key>CFBundleExecutable</key>
     <string>Marker</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>CFBundleDocumentTypes</key>
