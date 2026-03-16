@@ -1,71 +1,135 @@
-import { renderMermaidCached } from "./mermaid";
+import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
+import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
 import type { EditorView } from "@milkdown/kit/prose/view";
+import { renderMermaidCached } from "./mermaid";
 
-const RENDERED_ATTR = "data-mermaid-rendered";
+const mermaidPluginKey = new PluginKey<DecorationSet>("mermaid-diagrams");
 
 /**
- * Scan the ProseMirror document for code_block nodes with language "mermaid"
- * and replace their DOM representation with rendered SVG diagrams.
- *
- * Works with Milkdown Crepe which renders code blocks via CodeMirror
- * (not <pre><code> elements).
+ * ProseMirror plugin that renders mermaid code blocks as SVG diagrams.
+ * Uses Widget decorations so ProseMirror's document model is never modified.
+ * The code block stays in the doc; the SVG is rendered as a decoration after it.
  */
-async function renderMermaidBlocks(view: EditorView, container: HTMLElement): Promise<void> {
-  const doc = view.state.doc;
-  const positions: { pos: number; text: string }[] = [];
+export function createMermaidPlugin(): Plugin {
+  let rendering = false;
 
-  // Walk the document to find code_block nodes with language "mermaid"
-  doc.descendants((node, pos) => {
-    if (node.type.name === "code_block" && node.attrs?.language === "mermaid") {
-      const text = node.textContent;
-      if (text.trim()) {
-        positions.push({ pos, text });
+  async function buildDecorations(view: EditorView): Promise<DecorationSet> {
+    const doc = view.state.doc;
+    const decorations: Decoration[] = [];
+
+    const mermaidBlocks: { pos: number; end: number; text: string }[] = [];
+
+    doc.descendants((node, pos) => {
+      if (node.type.name === "code_block" && node.attrs?.language === "mermaid") {
+        const text = node.textContent.trim();
+        if (text) {
+          mermaidBlocks.push({ pos, end: pos + node.nodeSize, text });
+        }
       }
-    }
-  });
-
-  for (const { pos, text } of positions) {
-    // Get the DOM node for this ProseMirror position
-    const domNode = view.nodeDOM(pos);
-    if (!domNode || !(domNode instanceof HTMLElement)) continue;
-    if (domNode.hasAttribute(RENDERED_ATTR)) continue;
-
-    const { svg, error } = await renderMermaidCached(text);
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "mermaid-rendered-wrapper";
-    wrapper.setAttribute(RENDERED_ATTR, "true");
-    wrapper.style.cssText = [
-      "cursor: pointer",
-      "padding: 1rem",
-      "border-radius: 6px",
-      "background: var(--crepe-color-surface, var(--bg-primary, #1e1e2e))",
-      "border: 1px solid var(--crepe-color-line, var(--border-color, #313244))",
-      "margin: 0.5rem 0",
-      "text-align: center",
-    ].join(";");
-
-    if (error || !svg) {
-      wrapper.innerHTML = `<pre style="color:#f38ba8;white-space:pre-wrap;text-align:left;font-size:0.85em">[Mermaid error] ${escapeHtml(error ?? "Unknown error")}</pre>`;
-    } else {
-      wrapper.innerHTML = svg;
-      const svgEl = wrapper.querySelector("svg");
-      if (svgEl) {
-        svgEl.style.maxWidth = "100%";
-        svgEl.style.height = "auto";
-      }
-    }
-
-    // Click toggles back to code view
-    wrapper.addEventListener("click", () => {
-      wrapper.replaceWith(domNode);
-      domNode.removeAttribute(RENDERED_ATTR);
     });
 
-    // Replace the CodeMirror editor DOM with the rendered diagram
-    domNode.setAttribute(RENDERED_ATTR, "true");
-    domNode.replaceWith(wrapper);
+    for (const block of mermaidBlocks) {
+      const { svg, error } = await renderMermaidCached(block.text);
+
+      // Widget decoration placed after the code block
+      const widget = Decoration.widget(block.end, () => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "mermaid-rendered";
+        wrapper.style.cssText = [
+          "padding: 1rem",
+          "border-radius: 6px",
+          "background: var(--crepe-color-surface, var(--bg-primary, #1e1e2e))",
+          "border: 1px solid var(--crepe-color-line, var(--border-color, #313244))",
+          "margin: 0.5rem 0",
+          "text-align: center",
+        ].join(";");
+
+        if (error || !svg) {
+          wrapper.innerHTML = `<pre style="color:#f38ba8;white-space:pre-wrap;text-align:left;font-size:0.85em">[Mermaid error] ${escapeHtml(error ?? "Unknown error")}</pre>`;
+        } else {
+          wrapper.innerHTML = svg;
+          const svgEl = wrapper.querySelector("svg");
+          if (svgEl) {
+            svgEl.style.maxWidth = "100%";
+            svgEl.style.height = "auto";
+          }
+        }
+        return wrapper;
+      }, { side: 1 });
+
+      decorations.push(widget);
+
+      // Also hide the code block itself using a node decoration
+      decorations.push(
+        Decoration.node(block.pos, block.end, {
+          class: "mermaid-source-hidden",
+          style: "display: none",
+        })
+      );
+    }
+
+    return DecorationSet.create(doc, decorations);
   }
+
+  return new Plugin({
+    key: mermaidPluginKey,
+    state: {
+      init() {
+        return DecorationSet.empty;
+      },
+      apply(tr, oldSet) {
+        const meta = tr.getMeta(mermaidPluginKey);
+        if (meta !== undefined) {
+          return meta as DecorationSet;
+        }
+        if (tr.docChanged) {
+          return oldSet.map(tr.mapping, tr.doc);
+        }
+        return oldSet;
+      },
+    },
+    props: {
+      decorations(state) {
+        return mermaidPluginKey.getState(state) ?? DecorationSet.empty;
+      },
+    },
+    view(editorView) {
+      // Render mermaid blocks after the view is created
+      const renderAll = () => {
+        if (rendering) return;
+        rendering = true;
+        buildDecorations(editorView).then((decoSet) => {
+          rendering = false;
+          const tr = editorView.state.tr.setMeta(mermaidPluginKey, decoSet);
+          editorView.dispatch(tr);
+        });
+      };
+
+      // Initial render with a delay to let Crepe finish setup
+      setTimeout(renderAll, 500);
+
+      return {
+        update(view, prevState) {
+          if (view.state.doc !== prevState.doc) {
+            // Debounce re-renders on doc changes
+            setTimeout(renderAll, 800);
+          }
+        },
+      };
+    },
+  });
+}
+
+/**
+ * Legacy API — kept for backward compatibility with TabPool.
+ * Now returns a no-op cleanup since rendering is handled by the ProseMirror plugin.
+ */
+export function setupMermaidObserver(
+  _container: HTMLElement,
+  _getView?: () => EditorView | null
+): () => void {
+  // Mermaid rendering is now handled by createMermaidPlugin()
+  return () => {};
 }
 
 function escapeHtml(str: string): string {
@@ -73,45 +137,4 @@ function escapeHtml(str: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-}
-
-/**
- * Set up mermaid rendering for a Crepe editor tab.
- * Uses the ProseMirror EditorView to find code blocks, not DOM scanning.
- *
- * @param container The editor tab container element
- * @param getView Function that returns the current EditorView (may change on re-create)
- * @returns A cleanup function
- */
-export function setupMermaidObserver(
-  container: HTMLElement,
-  getView?: () => EditorView | null
-): () => void {
-  let suppressed = false;
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function scanAndRender(): void {
-    if (suppressed) return;
-    const view = getView?.();
-    if (!view) return;
-    renderMermaidBlocks(view, container);
-  }
-
-  // Initial scan after a short delay (let Crepe finish rendering)
-  setTimeout(scanAndRender, 300);
-
-  const observer = new MutationObserver(() => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(scanAndRender, 500);
-  });
-
-  observer.observe(container, {
-    childList: true,
-    subtree: true,
-  });
-
-  return () => {
-    observer.disconnect();
-    if (debounceTimer) clearTimeout(debounceTimer);
-  };
 }

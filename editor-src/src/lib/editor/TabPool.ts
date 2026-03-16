@@ -3,7 +3,7 @@ import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame-dark.css";
 import { editorViewCtx, prosePluginsCtx } from "@milkdown/kit/core";
 import type { EditorView } from "@milkdown/kit/prose/view";
-import { setupMermaidObserver } from "../plugins/crepe-mermaid";
+import { setupMermaidObserver, createMermaidPlugin } from "../plugins/crepe-mermaid";
 import { createSearchPlugin } from "../plugins/search";
 
 export interface TabState {
@@ -87,7 +87,7 @@ export class TabPool {
 
     // Register the search decoration plugin before the editor is created
     crepe.editor.config((ctx) => {
-      ctx.update(prosePluginsCtx, (plugins) => [...plugins, createSearchPlugin()]);
+      ctx.update(prosePluginsCtx, (plugins) => [...plugins, createSearchPlugin(), createMermaidPlugin()]);
     });
 
     await crepe.create();
