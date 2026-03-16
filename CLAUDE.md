@@ -3,14 +3,16 @@
 ## What This Is
 
 Native macOS hybrid app: Swift/AppKit shell + WKWebView hosting Milkdown Crepe editor.
-Replaces the Tauri version at `/Users/esaipetch/devwork/marker` (archived).
+Single repo containing both the Swift app and JS editor source.
 
-## Two-Repo Relationship
+## Repo Structure
 
-- **`/Users/esaipetch/devwork/marker`** — ARCHIVED Tauri app. **Source of truth for editor TypeScript only.** JS changes are made here, rebuilt via Vite, and copied to marker-swift.
-- **`/Users/esaipetch/devwork/marker-swift`** — The native Swift app. All UI is native AppKit. The Vite webview bundle (`marker/dist-editor/`) lives at `Marker/Resources/`.
+Single repo at `/Users/esaipetch/devwork/marker-swift` (GitHub: edsai/marker).
 
-**Files in `marker/` that are webview-relevant:**
+- **`editor-src/`** — JS editor TypeScript source. Build with Vite to produce the webview bundle.
+- **`Marker/Resources/`** — Built webview assets (editor.js, CSS, editor.html).
+
+**Files in `editor-src/` that are webview-relevant:**
 - `src/lib/editor/webview-entry.ts` — bridge API (marker.* methods)
 - `src/lib/editor/TabPool.ts` — LRU editor pool
 - `src/lib/plugins/search.ts` — ProseMirror find/replace
@@ -107,11 +109,23 @@ marker-swift/
 │   ├── AppearanceAwareView.swift     # NSView that re-snapshots CGColor on appearance change
 │   ├── Info.plist                    # Bundle config + .md file associations
 │   └── Marker.entitlements           # JIT entitlement for WKWebView
-├── Marker/Resources/                 # Manually maintained + copied from marker/dist-editor
+├── Marker/Resources/                 # Manually maintained + built from editor-src/
 │   ├── editor.html                   # WKWebView host page (HAND-WRITTEN)
 │   ├── editor.js                     # IIFE bundle (TabPool + Milkdown + plugins)
 │   ├── AppIcon.icns                  # App icon
 │   └── assets/                       # CSS + fonts (from Vite build)
+├── editor-src/                       # JS editor TypeScript source
+│   ├── src/lib/editor/
+│   │   ├── webview-entry.ts          # bridge API (marker.* methods)
+│   │   └── TabPool.ts                # LRU editor pool
+│   ├── src/lib/plugins/
+│   │   ├── search.ts                 # ProseMirror find/replace
+│   │   ├── crepe-mermaid.ts          # mermaid rendering
+│   │   └── mermaid.ts                # mermaid helper
+│   ├── vite.config.webview.ts        # Vite config (outputs dist-editor/)
+│   ├── tsconfig.json
+│   ├── package.json
+│   └── package-lock.json
 ├── MarkerTests/
 │   ├── TabManagerTests.swift         # 22 tests
 │   └── FileIOTests.swift             # 7 tests
@@ -121,13 +135,14 @@ marker-swift/
 
 ## Editor Bundle Rebuild Workflow
 
-When you change any TypeScript in `marker/`:
-1. `cd /Users/esaipetch/devwork/marker`
-2. `npx vite build --config vite.config.webview.ts`
-3. `cp -R dist-editor/* /Users/esaipetch/devwork/marker-swift/Marker/Resources/`
-4. **Check if CSS hash changed:** `ls dist-editor/assets/style-*.css` — update `<link href>` in editor.html if needed
-5. `cd /Users/esaipetch/devwork/marker-swift && xcodegen generate`
-6. `xcodebuild -project Marker.xcodeproj -scheme Marker -configuration Debug build`
+When you change any TypeScript in `editor-src/`:
+1. `cd /Users/esaipetch/devwork/marker-swift/editor-src`
+2. `npm install` (first time only, or after adding dependencies)
+3. `npx vite build --config vite.config.webview.ts`
+4. `cp -R dist-editor/* ../Marker/Resources/`
+5. **Check if CSS hash changed:** `ls dist-editor/assets/style-*.css` — update `<link href>` in editor.html if needed
+6. `cd /Users/esaipetch/devwork/marker-swift && xcodegen generate`
+7. `xcodebuild -project Marker.xcodeproj -scheme Marker -configuration Debug build`
 
 ## Bridge API
 

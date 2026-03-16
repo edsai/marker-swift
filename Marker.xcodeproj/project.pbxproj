@@ -13,6 +13,7 @@
 		2C3D1AC8A06EE3610C465D83 /* FileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6FE691D980EDD395DCAF205 /* FileWatcher.swift */; };
 		38930523DDB89E9F3D6D3059 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05476AB22007C99513939FD /* TabManager.swift */; };
 		45DFD1B1E20272264A65B545 /* FileIOTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE7B0FE98BBD5C048CB8EAD /* FileIOTests.swift */; };
+		6EBA66FE680FA8F4DC547F7E /* FindBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52317635604ED9ABAD476803 /* FindBarView.swift */; };
 		751B52DD314B20E8FBDBFB58 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE00314F636B96E041D69FD /* main.swift */; };
 		8A7DD86BC6697B65E4C16F94 /* MarkerBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11149E741A68525959D31440 /* MarkerBridge.swift */; };
 		9F5251E7E5EF7351241F7AA2 /* AppearanceAwareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC20E81E26242836136D96EF /* AppearanceAwareView.swift */; };
@@ -46,6 +47,7 @@
 		4195D7BAABE0197C72922E81 /* StatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
 		492A178DBEEE70C788A5E79B /* EditorWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorWebViewController.swift; sourceTree = "<group>"; };
 		4EE7B0FE98BBD5C048CB8EAD /* FileIOTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileIOTests.swift; sourceTree = "<group>"; };
+		52317635604ED9ABAD476803 /* FindBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindBarView.swift; sourceTree = "<group>"; };
 		5C1BEDC717D9BBACECB8D5EF /* MainWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowController.swift; sourceTree = "<group>"; };
 		621B1986DE69B991095ABBCF /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		624E30132E40B5140B80FD2E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -77,6 +79,7 @@
 				2B2BEAFA38CF33208623EEFC /* FileNode.swift */,
 				90B778882F87AE121D2DE618 /* FileTreeViewController.swift */,
 				F6FE691D980EDD395DCAF205 /* FileWatcher.swift */,
+				52317635604ED9ABAD476803 /* FindBarView.swift */,
 				624E30132E40B5140B80FD2E /* Info.plist */,
 				DFE00314F636B96E041D69FD /* main.swift */,
 				5C1BEDC717D9BBACECB8D5EF /* MainWindowController.swift */,
@@ -228,6 +231,7 @@
 				F3EA349A8A8E5210525F8AD6 /* FileNode.swift in Sources */,
 				A894FD4EE843FF9EE3EC1464 /* FileTreeViewController.swift in Sources */,
 				2C3D1AC8A06EE3610C465D83 /* FileWatcher.swift in Sources */,
+				6EBA66FE680FA8F4DC547F7E /* FindBarView.swift in Sources */,
 				A12E189F5368CC47B9734A5A /* MainWindowController.swift in Sources */,
 				8A7DD86BC6697B65E4C16F94 /* MarkerBridge.swift in Sources */,
 				F7245FE7EAD1A6FD3FCBA93C /* MarkerSchemeHandler.swift in Sources */,
