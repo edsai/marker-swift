@@ -93,7 +93,15 @@ export class TabPool {
     await crepe.create();
 
     // Set up Mermaid diagram rendering observer
-    const cleanupMermaid = setupMermaidObserver(container);
+    // Pass a getView function so the observer can access the EditorView
+    const getView = () => {
+      try {
+        return crepe.editor.ctx.get(editorViewCtx);
+      } catch {
+        return null;
+      }
+    };
+    const cleanupMermaid = setupMermaidObserver(container, getView);
 
     // Listen for content changes to mark tab dirty
     if (this.callbacks.onChange) {
